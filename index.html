@@ -46,12 +46,19 @@ d3.csv("vulnerability_data.csv")
         console.log("CSV loaded");
         console.log(csvData);
 
-        data = csvData.map(d => ({
-            loc: d.loc,
-            species: d.species,
-            time_order: +d.time_order,
-            vulnerability: +d.vulnerability
-        }));
+        data = csvData
+    .filter(d =>
+        d.vulnerability === "True" ||
+        d.vulnerability === "False"
+    )
+    .map(d => ({
+        loc: d.loc,
+        species: d.species,
+        time_order: +d.time_order,
+        vulnerability: d.vulnerability === "True"
+            ? 1
+            : 0
+    }));
 
         console.log("Processed data:");
         console.log(data.slice(0, 5));
