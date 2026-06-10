@@ -2,165 +2,50 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Species Vulnerability Explorer</title>
+    <title>Species Vulnerability</title>
+
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
-
         body {
-            font-family: 'Georgia', serif;
-            margin: 0;
-            padding: 0;
-            background: #f0f4f0;
-            color: #1a2e1a;
-        }
-
-        header {
-            background: #1a3320;
-            color: #e8f0e8;
-            padding: 24px 40px 20px;
-            border-bottom: 3px solid #4a7c59;
-        }
-
-        header h1 {
-            margin: 0 0 4px 0;
-            font-size: 1.5rem;
-            font-weight: normal;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
-        }
-
-        header p {
-            margin: 0;
-            font-size: 0.85rem;
-            color: #8fb89a;
             font-family: Arial, sans-serif;
-        }
-
-        .controls {
-            display: flex;
-            align-items: center;
-            gap: 32px;
-            padding: 18px 40px;
-            background: #ffffff;
-            border-bottom: 1px solid #ccd9cc;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .control-group label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #4a7c59;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
+            margin: 40px;
         }
 
         select {
-            padding: 6px 10px;
-            border: 1px solid #b0c8b0;
-            border-radius: 3px;
-            background: #f9fbf9;
-            font-size: 0.9rem;
-            font-family: Arial, sans-serif;
-            color: #1a2e1a;
-            min-width: 200px;
-            cursor: pointer;
-        }
-
-        select:focus {
-            outline: 2px solid #4a7c59;
-            outline-offset: 1px;
-        }
-
-        #plot-container {
-            padding: 24px 40px 40px;
+            margin-right: 20px;
+            padding: 5px;
         }
 
         #plot {
             width: 100%;
-            height: 560px;
-            background: #ffffff;
-            border: 1px solid #ccd9cc;
-            border-radius: 4px;
-        }
-
-        .legend-strip {
-            display: flex;
-            gap: 0;
-            margin: 12px 0 0 0;
-            border: 1px solid #ccd9cc;
-            border-radius: 3px;
-            overflow: hidden;
-            width: fit-content;
-            font-family: Arial, sans-serif;
-            font-size: 0.75rem;
-        }
-
-        .legend-strip div {
-            padding: 5px 14px;
-            color: #fff;
-            font-weight: bold;
+            height: 700px;
         }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>Species Vulnerability Explorer</h1>
-    <p>Life-stage vulnerability scores by location and time period</p>
-</header>
+<h2>Species Vulnerability Explorer</h2>
 
-<div class="controls">
-    <div class="control-group">
-        <label>Location</label>
-        <select id="locationDropdown"></select>
-    </div>
-    <div class="control-group">
-        <label>Species</label>
-        <select id="speciesDropdown"></select>
-    </div>
-</div>
+<label>Location:</label>
+<select id="locationDropdown"></select>
 
-<div id="plot-container">
-    <div id="plot"></div>
-    <div class="legend-strip">
-        <div style="background:#2d6a4f;">1 — Very Low</div>
-        <div style="background:#52b788;">2 — Low</div>
-        <div style="background:#f4a261;">3 — Moderate</div>
-        <div style="background:#e76f51;">4 — High</div>
-        <div style="background:#9b2226;">5 — Very High</div>
-    </div>
-</div>
+<label>Species:</label>
+<select id="speciesDropdown"></select>
+
+<div id="plot"></div>
 
 <script>
-
-const scoreLabels = {
-    1: "Very Low",
-    2: "Low",
-    3: "Moderate",
-    4: "High",
-    5: "Very High"
-};
-
-const scoreColors = {
-    1: "#2d6a4f",
-    2: "#52b788",
-    3: "#f4a261",
-    4: "#e76f51",
-    5: "#9b2226"
-};
 
 let data;
 
 d3.csv("vulnerability_data.csv")
     .then(function(csvData) {
+
+        console.log("CSV loaded");
+        console.log(csvData);
+
         data = csvData
             .filter(d => d.vulnerability_score !== "")
             .map(d => ({
@@ -172,6 +57,9 @@ d3.csv("vulnerability_data.csv")
                 vulnerability: +d.vulnerability_score
             }));
 
+        console.log("Processed data:");
+        console.log(data.slice(0, 5));
+
         initializeLocationDropdown();
     })
     .catch(function(error) {
@@ -179,129 +67,134 @@ d3.csv("vulnerability_data.csv")
     });
 
 function initializeLocationDropdown() {
-    const locations = [...new Set(data.map(d => d.loc))].sort();
-    const locationDropdown = document.getElementById("locationDropdown");
+
+    const locations =
+        [...new Set(data.map(d => d.loc))]
+        .sort();
+
+    const locationDropdown =
+        document.getElementById("locationDropdown");
 
     locations.forEach(loc => {
+
         const option = document.createElement("option");
+
         option.value = loc;
         option.text = loc;
+
         locationDropdown.appendChild(option);
     });
 
-    locationDropdown.addEventListener("change", updateSpeciesDropdown);
+    locationDropdown.addEventListener(
+        "change",
+        updateSpeciesDropdown
+    );
+
     updateSpeciesDropdown();
 }
 
 function updateSpeciesDropdown() {
-    const loc = document.getElementById("locationDropdown").value;
-    const species = [...new Set(
-        data.filter(d => d.loc === loc).map(d => d.species)
-    )].sort();
 
-    const speciesDropdown = document.getElementById("speciesDropdown");
+    const loc =
+        document.getElementById("locationDropdown").value;
+
+    const species =
+        [...new Set(
+            data
+                .filter(d => d.loc === loc)
+                .map(d => d.species)
+        )]
+        .sort();
+
+    const speciesDropdown =
+        document.getElementById("speciesDropdown");
+
     speciesDropdown.innerHTML = "";
 
     species.forEach(sp => {
+
         const option = document.createElement("option");
+
         option.value = sp;
         option.text = sp;
+
         speciesDropdown.appendChild(option);
     });
 
     speciesDropdown.onchange = drawPlot;
+
     drawPlot();
 }
 
 function drawPlot() {
-    const loc = document.getElementById("locationDropdown").value;
-    const species = document.getElementById("speciesDropdown").value;
 
-    const filtered = data
-        .filter(d => d.loc === loc && d.species === species)
-        .sort((a, b) => a.time_order - b.time_order);
+    const loc =
+        document.getElementById("locationDropdown").value;
+
+    const species =
+        document.getElementById("speciesDropdown").value;
+
+    const filtered =
+        data.filter(d =>
+            d.loc === loc &&
+            d.species === species
+        );
+
+    filtered.sort(
+        (a, b) => a.time_order - b.time_order
+    );
 
     const tickvals = filtered.map(d => d.time_order);
     const ticktext = filtered.map(d =>
         d.half_month === 1 ? d.month.slice(0, 3) : ""
     );
 
-    // Colour each segment by the score at the start of that segment
-    const traces = [];
+    const trace = {
 
-    for (let i = 0; i < filtered.length; i++) {
-        const score = filtered[i].vulnerability;
-        const x0 = filtered[i].time_order;
-        const x1 = i + 1 < filtered.length ? filtered[i + 1].time_order : x0 + 1;
-
-        traces.push({
-            x: [x0, x1],
-            y: [score, score],
-            mode: "lines",
-            type: "scatter",
-            line: {
-                color: scoreColors[score],
-                width: 5,
-                shape: "hv"
-            },
-            showlegend: false,
-            hoverinfo: "skip"
-        });
-    }
-
-    // Marker trace for hover
-    traces.push({
         x: filtered.map(d => d.time_order),
+
         y: filtered.map(d => d.vulnerability),
-        mode: "markers",
+
+        mode: "lines+markers",
+
         type: "scatter",
-        marker: {
-            color: filtered.map(d => scoreColors[d.vulnerability]),
-            size: 10,
-            line: { color: "#fff", width: 2 }
-        },
-        text: filtered.map(d =>
-            `${d.month} (${d.half_month === 1 ? "early" : "late"})<br>` +
-            `Score: ${d.vulnerability} — ${scoreLabels[d.vulnerability]}`
-        ),
-        hovertemplate: "%{text}<extra></extra>",
-        showlegend: false
-    });
+
+        name: species,
+
+        line: {
+            shape: "hv"
+        }
+    };
 
     Plotly.newPlot(
         "plot",
-        traces,
+        [trace],
         {
-            title: {
-                text: `<b>${species}</b> — ${loc}`,
-                font: { family: "Georgia, serif", size: 16, color: "#1a2e1a" }
-            },
+            title: `${species} (${loc})`,
+
             xaxis: {
-                title: { text: "Month", font: { family: "Arial, sans-serif", size: 12 } },
+                title: "Month",
                 tickvals: tickvals,
-                ticktext: ticktext,
-                tickfont: { family: "Arial, sans-serif", size: 11 },
-                gridcolor: "#e0e8e0",
-                zeroline: false
+                ticktext: ticktext
             },
+
             yaxis: {
-                title: { text: "Vulnerability", font: { family: "Arial, sans-serif", size: 12 } },
+                title: "Vulnerability Score",
                 tickvals: [1, 2, 3, 4, 5],
-                ticktext: ["1 — Very Low", "2 — Low", "3 — Moderate", "4 — High", "5 — Very High"],
-                tickfont: { family: "Arial, sans-serif", size: 11 },
-                range: [0.5, 5.5],
-                gridcolor: "#e0e8e0",
-                zeroline: false
-            },
-            plot_bgcolor: "#ffffff",
-            paper_bgcolor: "#ffffff",
-            margin: { t: 60, r: 30, b: 60, l: 140 },
-            hovermode: "closest"
-        },
-        { responsive: true }
+                ticktext: [
+                    "1 (Very Low)",
+                    "2 (Low)",
+                    "3 (Moderate)",
+                    "4 (High)",
+                    "5 (Very High)"
+                ],
+                range: [0.5, 5.5]
+            }
+        }
     );
 }
 
 </script>
+
 </body>
 </html>
