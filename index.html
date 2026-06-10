@@ -144,10 +144,15 @@ function drawPlot() {
         (a, b) => a.time_order - b.time_order
     );
 
-    const tickvals = filtered.map(d => d.time_order);
-    const ticktext = filtered.map(d =>
-        d.half_month === 1 ? d.month.slice(0, 3) : ""
-    );
+    const monthNames = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+];
+
+const tickvals = d3.range(24);
+const ticktext = tickvals.map(i =>
+    i % 2 === 0 ? monthNames[i / 2].slice(0, 3) : ""
+);
 
     const trace = {
 
