@@ -167,11 +167,16 @@ function drawPlot() {
         [trace],
         {
             title: `${species} (${loc})`,
+
             xaxis: {
                 title: "Time Order"
             },
+
             yaxis: {
-                title: "Vulnerability"
+                title: "Vulnerability",
+                tickvals: [0, 1],
+                ticktext: ["False", "True"],
+                range: [-0.2, 1.2]
             }
         }
     );
