@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <title>Species Vulnerability</title>
 
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
     <style>
@@ -39,7 +40,7 @@
 
 let data;
 
-Plotly.d3.csv("vulnerability_data.csv", function(csvData) {
+d3.csv("vulnerability_data.csv").then(function(csvData) {
 
     data = csvData.map(d => ({
         loc: d.loc,
@@ -47,6 +48,9 @@ Plotly.d3.csv("vulnerability_data.csv", function(csvData) {
         time_order: +d.time_order,
         vulnerability: +d.vulnerability
     }));
+
+    console.log(data.length);
+    console.log(data[0]);
 
     initializeLocationDropdown();
 });
