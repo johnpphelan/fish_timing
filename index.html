@@ -40,31 +40,33 @@
 
 let data;
 
-d3.csv("vulnerability_data.csv")
-    .then(function(csvData) {
+// AUTO-detect CSV vs TSV (robust)
+d3.text("vulnerability_data.csv").then(function(raw) {
 
-        console.log("CSV loaded");
-        console.log(csvData);
+    const delimiter = raw.includes("\t") ? "\t" : ",";
+    const parsed = d3.dsvFormat(delimiter).parse(raw);
 
-        data = csvData
-            .filter(d => d.vulnerability_score !== "")
-            .map(d => ({
-                loc: d.loc,
-                species: d.species,
-                time_order: +d.time_order,
-                month: d.month,
-                half_month: +d.half_month,
-                vulnerability: +d.vulnerability_score
-            }));
+    data = parsed
+        .map(d => ({
+            loc: d.loc ? d.loc.trim() : "",
+            species: d.species ? d.species.trim() : "",
+            time_order: +d.time_order,
+            month: d.month,
+            half_month: +d.half_month,
+            vulnerability: +d.vulnerability_score,
+            stage: d.stage || ""
+        }))
+        .filter(d =>
+            d.loc !== "" &&
+            d.species !== "" &&
+            !isNaN(d.time_order) &&
+            !isNaN(d.vulnerability)
+        );
 
-        console.log("Processed data:");
-        console.log(data.slice(0, 5));
+    console.log("Parsed data:", data.slice(0,5));
 
-        initializeLocationDropdown();
-    })
-    .catch(function(error) {
-        console.error("CSV loading failed:", error);
-    });
+    initializeLocationDropdown();
+});
 
 function initializeLocationDropdown() {
 
@@ -72,23 +74,19 @@ function initializeLocationDropdown() {
         [...new Set(data.map(d => d.loc))]
         .sort();
 
-    const locationDropdown =
+    const dropdown =
         document.getElementById("locationDropdown");
 
     locations.forEach(loc => {
 
         const option = document.createElement("option");
-
         option.value = loc;
         option.text = loc;
 
-        locationDropdown.appendChild(option);
+        dropdown.appendChild(option);
     });
 
-    locationDropdown.addEventListener(
-        "change",
-        updateSpeciesDropdown
-    );
+    dropdown.addEventListener("change", updateSpeciesDropdown);
 
     updateSpeciesDropdown();
 }
@@ -106,22 +104,21 @@ function updateSpeciesDropdown() {
         )]
         .sort();
 
-    const speciesDropdown =
+    const dropdown =
         document.getElementById("speciesDropdown");
 
-    speciesDropdown.innerHTML = "";
+    dropdown.innerHTML = "";
 
     species.forEach(sp => {
 
         const option = document.createElement("option");
-
         option.value = sp;
         option.text = sp;
 
-        speciesDropdown.appendChild(option);
+        dropdown.appendChild(option);
     });
 
-    speciesDropdown.onchange = drawPlot;
+    dropdown.onchange = drawPlot;
 
     drawPlot();
 }
@@ -140,30 +137,34 @@ function drawPlot() {
             d.species === species
         );
 
-    filtered.sort(
-        (a, b) => a.time_order - b.time_order
-    );
+    filtered.sort((a, b) => a.time_order - b.time_order);
 
     const monthNames = [
-    "January","February","March","April","May","June",
-    "July","August","September","October","November","December"
-];
+        "January","February","March","April","May","June",
+        "July","August","September","October","November","December"
+    ];
 
-const tickvals = d3.range(24);
-const ticktext = tickvals.map(i =>
-    i % 2 === 0 ? monthNames[i / 2].slice(0, 3) : ""
-);
+    const tickvals = d3.range(24);
+
+    const ticktext = tickvals.map(i =>
+        i % 2 === 0 ? monthNames[i / 2].slice(0, 3) : ""
+    );
 
     const trace = {
-
         x: filtered.map(d => d.time_order),
-
         y: filtered.map(d => d.vulnerability),
 
+        text: filtered.map(d =>
+            `${d.month} (${d.half_month === 1 ? "Early" : "Late"})<br>${d.stage}`
+        ),
+
+        hovertemplate:
+            "<b>%{text}</b><br>" +
+            "Vulnerability: %{y}<br>" +
+            "<extra></extra>",
+
         mode: "lines+markers",
-
         type: "scatter",
-
         name: species,
 
         line: {
