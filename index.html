@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Species Vulnerability</title>
+
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+
+        select {
+            margin-right: 20px;
+            padding: 5px;
+        }
+
+        #plot {
+            width: 100%;
+            height: 700px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Species Vulnerability Explorer</h2>
+
+<label>Location:</label>
+<select id="locationDropdown"></select>
+
+<label>Species:</label>
+<select id="speciesDropdown"></select>
+
+<div id="plot"></div>
+
+<script>
+
+let data;
+
+Plotly.d3.csv("vulnerability_data.csv", function(csvData) {
+
+    data = csvData.map(d => ({
+        loc: d.loc,
+        species: d.species,
+        time_order: +d.time_order,
+        vulnerability: +d.vulnerability
+    }));
+
+    initializeLocationDropdown();
+});
+
+function initializeLocationDropdown() {
+
+    const locations =
+        [...new Set(data.map(d => d.loc))]
+        .sort();
+
+    const locationDropdown =
+        document.getElementById("locationDropdown");
+
+    locations.forEach(loc => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = loc;
+        option.text = loc;
+
+        locationDropdown.appendChild(option);
+    });
+
+    locationDropdown.addEventListener(
+        "change",
+        updateSpeciesDropdown
+    );
+
+    updateSpeciesDropdown();
+}
+
+function updateSpeciesDropdown() {
+
+    const loc =
+        document.getElementById("locationDropdown").value;
+
+    const species =
+        [...new Set(
+            data
+                .filter(d => d.loc === loc)
+                .map(d => d.species)
+        )]
+        .sort();
+
+    const speciesDropdown =
+        document.getElementById("speciesDropdown");
+
+    speciesDropdown.innerHTML = "";
+
+    species.forEach(sp => {
+
+        const option =
+            document.createElement("option");
+
+        option.value = sp;
+        option.text = sp;
+
+        speciesDropdown.appendChild(option);
+    });
+
+    speciesDropdown.onchange = drawPlot;
+
+    drawPlot();
+}
+
+function drawPlot() {
+
+    const loc =
+        document.getElementById("locationDropdown").value;
+
+    const species =
+        document.getElementById("speciesDropdown").value;
+
+    const filtered =
+        data.filter(d =>
+            d.loc === loc &&
+            d.species === species
+        );
+
+    filtered.sort(
+        (a, b) => a.time_order - b.time_order
+    );
+
+    const trace = {
+
+        x: filtered.map(d => d.time_order),
+
+        y: filtered.map(d => d.vulnerability),
+
+        mode: "lines+markers",
+
+        type: "scatter",
+
+        name: species
+    };
+
+    Plotly.newPlot(
+        "plot",
+        [trace],
+        {
+            title: `${species} (${loc})`,
+            xaxis: {
+                title: "Time Order"
+            },
+            yaxis: {
+                title: "Vulnerability"
+            }
+        }
+    );
+}
+
+</script>
+
+</body>
+</html>
