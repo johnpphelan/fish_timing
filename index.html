@@ -1,7 +1,5 @@
 <!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
+<htmlmeta charset="utf-8"><html>
     <title>Species Vulnerability</title>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -40,7 +38,7 @@
 
 let data;
 
-// AUTO-detect CSV vs TSV (robust)
+// Robust file loading (handles comma OR tab automatically)
 d3.text("vulnerability_data.csv").then(function(raw) {
 
     const delimiter = raw.includes("\t") ? "\t" : ",";
@@ -54,7 +52,7 @@ d3.text("vulnerability_data.csv").then(function(raw) {
             month: d.month,
             half_month: +d.half_month,
             vulnerability: +d.vulnerability_score,
-            stage: d.stage || ""
+            stage: d.stage ? d.stage : "Unknown"
         }))
         .filter(d =>
             d.loc !== "" &&
@@ -63,26 +61,21 @@ d3.text("vulnerability_data.csv").then(function(raw) {
             !isNaN(d.vulnerability)
         );
 
-    console.log("Parsed data:", data.slice(0,5));
+    console.log("Data loaded:", data.slice(0,5));
 
     initializeLocationDropdown();
 });
 
 function initializeLocationDropdown() {
 
-    const locations =
-        [...new Set(data.map(d => d.loc))]
-        .sort();
+    const locations = [...new Set(data.map(d => d.loc))].sort();
 
-    const dropdown =
-        document.getElementById("locationDropdown");
+    const dropdown = document.getElementById("locationDropdown");
 
     locations.forEach(loc => {
-
         const option = document.createElement("option");
         option.value = loc;
         option.text = loc;
-
         dropdown.appendChild(option);
     });
 
@@ -93,28 +86,21 @@ function initializeLocationDropdown() {
 
 function updateSpeciesDropdown() {
 
-    const loc =
-        document.getElementById("locationDropdown").value;
+    const loc = document.getElementById("locationDropdown").value;
 
-    const species =
-        [...new Set(
-            data
-                .filter(d => d.loc === loc)
-                .map(d => d.species)
-        )]
-        .sort();
+    const species = [...new Set(
+        data
+            .filter(d => d.loc === loc)
+            .map(d => d.species)
+    )].sort();
 
-    const dropdown =
-        document.getElementById("speciesDropdown");
-
+    const dropdown = document.getElementById("speciesDropdown");
     dropdown.innerHTML = "";
 
     species.forEach(sp => {
-
         const option = document.createElement("option");
         option.value = sp;
         option.text = sp;
-
         dropdown.appendChild(option);
     });
 
@@ -125,19 +111,18 @@ function updateSpeciesDropdown() {
 
 function drawPlot() {
 
-    const loc =
-        document.getElementById("locationDropdown").value;
+    const loc = document.getElementById("locationDropdown").value;
+    const species = document.getElementById("speciesDropdown").value;
 
-    const species =
-        document.getElementById("speciesDropdown").value;
-
-    const filtered =
-        data.filter(d =>
+    const filtered = data
+        .filter(d =>
             d.loc === loc &&
             d.species === species
-        );
+        )
+        .sort((a, b) => a.time_order - b.time_order);
 
-    filtered.sort((a, b) => a.time_order - b.time_order);
+    // Debug check
+    console.log("Filtered:", filtered);
 
     const monthNames = [
         "January","February","March","April","May","June",
@@ -154,12 +139,16 @@ function drawPlot() {
         x: filtered.map(d => d.time_order),
         y: filtered.map(d => d.vulnerability),
 
-        text: filtered.map(d =>
-            `${d.month} (${d.half_month === 1 ? "Early" : "Late"})<br>${d.stage}`
-        ),
+        // IMPORTANT: use customdata (this fixes your issue)
+        customdata: filtered.map(d => [
+            d.month,
+            d.half_month === 1 ? "Early" : "Late",
+            d.stage
+        ]),
 
         hovertemplate:
-            "<b>%{text}</b><br>" +
+            "<b>%{customdata[0]} (%{customdata[1]})</b><br>" +
+            "Stage: %{customdata[2]}<br>" +
             "Vulnerability: %{y}<br>" +
             "<extra></extra>",
 
@@ -172,35 +161,32 @@ function drawPlot() {
         }
     };
 
-    Plotly.newPlot(
-        "plot",
-        [trace],
-        {
-            title: `${species} (${loc})`,
+    Plotly.newPlot("plot", [trace], {
+        title: `${species} (${loc})`,
 
-            xaxis: {
-                title: "Month",
-                tickvals: tickvals,
-                ticktext: ticktext
-            },
+        xaxis: {
+            title: "Month",
+            tickvals: tickvals,
+            ticktext: ticktext
+        },
 
-            yaxis: {
-                title: "Vulnerability Score",
-                tickvals: [1, 2, 3, 4, 5],
-                ticktext: [
-                    "1 (Very Low)",
-                    "2 (Low)",
-                    "3 (Moderate)",
-                    "4 (High)",
-                    "5 (Very High)"
-                ],
-                range: [0.5, 5.5]
-            }
+        yaxis: {
+            title: "Vulnerability Score",
+            tickvals: [1, 2, 3, 4, 5],
+            ticktext: [
+                "1 (Very Low)",
+                "2 (Low)",
+                "3 (Moderate)",
+                "4 (High)",
+                "5 (Very High)"
+            ],
+            range: [0.5, 5.5]
         }
-    );
+    });
 }
 
 </script>
 
 </body>
 </html>
+<head>
