@@ -40,20 +40,27 @@
 
 let data;
 
-d3.csv("vulnerability_data.csv").then(function(csvData) {
+d3.csv("vulnerability_data.csv")
+    .then(function(csvData) {
 
-    data = csvData.map(d => ({
-        loc: d.loc,
-        species: d.species,
-        time_order: +d.time_order,
-        vulnerability: +d.vulnerability
-    }));
+        console.log("CSV loaded");
+        console.log(csvData);
 
-    console.log(data.length);
-    console.log(data[0]);
+        data = csvData.map(d => ({
+            loc: d.loc,
+            species: d.species,
+            time_order: +d.time_order,
+            vulnerability: +d.vulnerability
+        }));
 
-    initializeLocationDropdown();
-});
+        console.log("Processed data:");
+        console.log(data.slice(0, 5));
+
+        initializeLocationDropdown();
+    })
+    .catch(function(error) {
+        console.error("CSV loading failed:", error);
+    });
 
 function initializeLocationDropdown() {
 
